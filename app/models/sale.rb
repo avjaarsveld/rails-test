@@ -1,12 +1,16 @@
 class Sale < ActiveRecord::Base
 
-  # attr_accessor :date, :time
-  # attr_accessor :time
-  # attr_writer :date, :time
+  require 'digest/sha1'
 
-  # before_validation(:on => :create) do
-  #   self.datetime = "#{date} #{time}".to_datetime
-  # end
+  validates_presence_of :password
+  attr_accessor :password
+
+  before_save :encrypt_password
+
+  def self.find_with_password(id, password)
+    pwd = Digest::SHA1.hexdigest(password.to_s)
+    Sale.find_by_id_and_hashed_password(id, pwd)
+  end
 
   def date
     datetime.strftime('%Y%m%d')
@@ -28,6 +32,16 @@ class Sale < ActiveRecord::Base
     original = datetime || t.to_datetime
     self.datetime = DateTime.new(original.year, original.month, original.day,
       t.hour, t.min, t.sec)
+  end
+
+  private
+
+  def encrypt_password
+    unless self.password.blank?
+      self.hashed_password = Digest::SHA1.hexdigest(self.password.to_s)
+      self.password = nil
+    end
+    return true
   end
 
 end

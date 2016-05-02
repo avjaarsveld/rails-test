@@ -1,71 +1,55 @@
 require 'rails_helper'
 
 describe SalesController do
-  # See requests/sales_spec.rb
-  let :multiple_sales do
-    {
-      sales: [
-        {
-          date: '20140103',
-          time: '0700',
-          code: 'FL',
-          value: '2.00'
-        },
-        {
-          date: '20140103',
-          time: '0815',
-          code: 'DO',
-          value: '1.00'
-        }
-      ]
-    }
-  end
+  # Also see requests/sales_spec.rb
 
   describe 'Create' do
-    before(:each) do
-      @params = multiple_sales.merge(hashed_password: 'correct')
+
+    context 'with a password' do
+      before(:each) do
+        @params = multiple_sales.merge(password: '1234')
+      end
+
+      it 'can create' do
+        post :create, @params
+
+        expect(response).to be_success
+        expect(json_data_array.first['code']).to eq('FL')
+        expect(json_data_array.first['date']).to eq('20140103')
+        expect(json_data_array.first['hashed_password']).to be_truthy
+      end
+
+      it 'creates sales' do
+        expect { post :create, @params }.to change(Sale, :count).by(2)
+      end
+
+      # xit 'creates a sale with the correct date and time' do
+      #   # See request_spec
+      # end
     end
 
-    it 'can create' do
-      post :create, @params
-      expect(response).to be_success
-      parsed_response = JSON.parse(response.body)
+    # TODO: What about other invalid params?
+    context 'without password' do
+      it 'returns an error' do
+        post :create, multiple_sales
+        expect(response).to have_http_status(:bad_request)
+      end
     end
 
-    it 'creates sales' do
-      expect { post :create, @params }.to change(Sale, :count).by(2)
-    end
-
-    it 'creates sales only if password is valid' do
-      @params[:hashed_password] = 'wrong'
-      expect { post :create, @params }.to change(Sale, :count).by(0)
-    end
-
-    it 'returns and 403 if password is invalid' do
-      @params[:hashed_password] = 'wrong'
-      post :create, @params
-      expect(response).to have_http_status(403)
-    end
-
-    # it 'creates a sale with the correct date and time' do
-    #   post :create, @params
-    #   expect(json_data['code']).to eq('DO')
-    # end
-
-    # TODO: What about invalid params?
   end
 
+  # Show and Destroy not covered here (yet) as it is tested in request_spec
   # describe 'Show' do
-  #   it 'can show a sale' do
-
-  #   end
+    # it 'returns an error if password is missing' do
+    #   ...
+    #   expect(response).to have_http_status(403)
+    # end
   # end
 
   # describe 'Destroy' do
   #   # The question does not mention passwords for destroying a sale
-
   #   it 'can destroy' do
-
+  #     ...
   #   end
   # end
 end
